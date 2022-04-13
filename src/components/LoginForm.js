@@ -1,12 +1,39 @@
-import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import loginService from '../services/login'
+import userService from '../services/user'
+import { loginUser } from '../reducers/user'
+import { useField } from '../hooks'
 
-const LoginForm = ({ onLogin }) => {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+import { setNotification } from '../reducers/notification'
+
+import { Button, Input } from '.'
+
+const LoginForm = () => {
+  const username = useField('text')
+  const password = useField('password')
+
+  const dispatch = useDispatch()
+
+  const notify = (message, type = 'info') => {
+    dispatch(setNotification({ message, type }))
+  }
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    onLogin(username, password)
+    loginService
+      .login({
+        username: username.fields.value,
+        password: password.fields.value,
+      })
+      .then((user) => {
+        userService.setUser(user)
+
+        dispatch(loginUser(user))
+        notify(`${user.name} logged in!`)
+      })
+      .catch(() => {
+        notify('wrong username/password', 'alert')
+      })
   }
 
   return (
@@ -16,24 +43,15 @@ const LoginForm = ({ onLogin }) => {
       <form onSubmit={handleSubmit}>
         <div>
           username
-          <input
-            value={username}
-            onChange={({ target }) => setUsername(target.value)}
-            id='username'
-          />
+          <Input {...username.fields} />
         </div>
         <div>
           password
-          <input
-            type="password"
-            value={password}
-            onChange={({ target }) => setPassword(target.value)}
-            id="password"
-          />
+          <Input {...password.fields} />
         </div>
-        <button id="login-button" type="submit">
+        <Button id="login-button" type="submit">
           login
-        </button>
+        </Button>
       </form>
     </div>
   )
